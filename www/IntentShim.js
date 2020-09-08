@@ -34,6 +34,11 @@ IntentShim.prototype.startActivity = function(params, successCallback, errorCall
     exec(successCallback, errorCallback, "IntentShim", "startActivity", [params]);
 };
 
+IntentShim.prototype.startForegroundServicetest = function(params, successCallback, errorCallback) {
+    argscheck.checkArgs('off', 'IntentShim.startForegroundServicetest', arguments);
+    exec(successCallback, errorCallback, "IntentShim", "startForegroundServicetest", [params]);
+};
+
 IntentShim.prototype.startActivityForResult = function(params, successCallback, errorCallback) {
     argscheck.checkArgs('off', 'IntentShim.startActivityForResult', arguments);
     exec(successCallback, errorCallback, "IntentShim", "startActivityForResult", [params]);

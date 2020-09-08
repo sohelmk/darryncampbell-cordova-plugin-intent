@@ -54,6 +54,9 @@ public class IntentShim extends CordovaPlugin {
     private CallbackContext onActivityResultCallbackContext = null;
 
     private Intent deferredIntent = null;
+    private Intent resultIntent = null;
+
+  private Map<String,String> serviceStartParameters = new HashMap<String,String>();
 
     public IntentShim() {
 
@@ -84,6 +87,51 @@ public class IntentShim extends CordovaPlugin {
 
             return true;
         }
+
+
+
+else if (action.equals("startForegroundServicetest") ){
+    if (args.length() != 1) {
+                callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.INVALID_ACTION));
+                return false;
+            }
+             if (args.length() > 0)
+            {
+                            resultIntent = new Intent();
+
+                JSONObject json = args.getJSONObject(0);
+                JSONObject extras = (json.has("extras"))?json.getJSONObject("extras"):null;
+
+                // Populate the extras if any exist
+                if (extras != null) {
+                    JSONArray extraNames = extras.names();
+                    for (int i = 0; i < extraNames.length(); i++) {
+                        String key = extraNames.getString(i);
+                        Object extrasObj = extras.get(key);
+                        if (extrasObj instanceof JSONObject) {
+                            //  The extra is a bundle
+                            Bundle bundle = toBundle((JSONObject) extras.get(key));
+                            resultIntent.putExtra(key, bundle);
+                        } else {
+                            Log.d(LOG_TAG,"Here is the key -->"+key +"value -->"+extras.getString(key));
+                            if(key.equals("pkg_name")){
+                                serviceStartParameters.put(key,extras.getString(key));
+                            }
+                            // ras.getString(key));
+                            if(key.equals("cls_name")){
+                                serviceStartParameters.put(key,extras.getString(key));
+                            }
+                            resultIntent.putExtra(key, extras.getString(key));
+                        }
+                    }
+                }
+            }
+
+
+
+startForegroundServicetest( resultIntent,  args, serviceStartParameters, callbackContext);
+return true;
+}
         else if (action.equals("sendBroadcast"))
         {
             //  Credit: https://github.com/chrisekelley/cordova-webintent
@@ -294,6 +342,7 @@ public class IntentShim extends CordovaPlugin {
             return true;
 
         }
+  
 
         return true;
     }
@@ -344,6 +393,73 @@ public class IntentShim extends CordovaPlugin {
             return null;
         }
     }
+
+ private void startForegroundServicetest(Intent intent, JSONArray args, Map<String,String> serviceStartParameterstest, final CallbackContext callbackContext) throws JSONException {
+
+Log.d(LOG_TAG,"Inside  StartForeGroundServiceTest .......");
+
+        // Log.d(LOG_TAG, "FORK_NYMI_ACTION6: " + action);
+        // Log.d(LOG_TAG,"Sri debugging starts now!!!");
+
+for (String value : serviceStartParameterstest.values()) {
+
+            Log.d(LOG_TAG,"Received Service Parameters --> " +value);
+
+}
+
+String pkg_name=serviceStartParameterstest.get("pkg_name");
+String cls_name=serviceStartParameterstest.get("cls_name");
+
+Log.d(LOG_TAG,"pkg_name -->"+pkg_name);
+Log.d(LOG_TAG,"cls_name -->"+cls_name);
+
+            // Intent i = new Intent();
+            intent.setComponent(new ComponentName(pkg_name, cls_name));
+            // i.putExtra(AGENT_IP, "192.168.2.11");
+            // i.putExtra(AGENT_PORT, "1234");
+            
+            // Log.d(LOG_TAG, "FORK_NYMI_STARTFG" + action);
+        
+            Context context=this.cordova.getActivity().getApplicationContext(); 
+
+            Log.d(LOG_TAG, "FORK_NYMI_CONTEXT" + context.getApplicationInfo() );
+          boolean check_service_intalled =  isServiceInstalled(pkg_name);
+            Log.d(LOG_TAG, "FORK_NYMI_Service_Check -> "+check_service_intalled );
+            if(check_service_intalled){
+                Log.d(LOG_TAG,"Android build version sdk"+android.os.Build.VERSION.SDK_INT);
+                                // Log.d(LOG_TAG,"Android build version Code"+android.os.Build.VERSION_CODES);
+
+                if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O){
+                    context.startForegroundService(intent);
+                    Log.d(LOG_TAG,"We are above Oreo");
+                }else{
+                    context.startService(intent);
+                    Log.d(LOG_TAG,"We are Below Oreo");
+                }
+
+            // context.startForegroundService(intent);
+
+            callbackContext.success("Started NBE Service...");
+            }else{
+                callbackContext.error(0);
+                
+            }
+
+    }
+
+        private boolean isServiceInstalled(String pkg_name) {
+        final PackageManager pm = this.cordova.getActivity().getApplicationContext().getPackageManager();
+
+        try {
+            pm.getPackageInfo(pkg_name, 0);
+        }
+        catch (PackageManager.NameNotFoundException e) {
+            return false;
+        }
+
+        return true;
+    }
+
 
     private String getRealPathFromURI_API19(JSONObject obj, CallbackContext callbackContext) throws JSONException
     {
