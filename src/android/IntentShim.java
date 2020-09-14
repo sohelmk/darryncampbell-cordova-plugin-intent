@@ -2,6 +2,8 @@ package com.darryncampbell.cordova.plugin.intent;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.ActivityManager;
+import android.app.ActivityManager.RunningServiceInfo;
 import android.content.BroadcastReceiver;
 import android.content.ClipData;
 import android.content.ComponentName;
@@ -42,6 +44,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.List;
 
 import static android.os.Environment.getExternalStorageDirectory;
 import static android.os.Environment.getExternalStorageState;
@@ -131,6 +134,91 @@ else if (action.equals("startForegroundServicetest") ){
 
 startForegroundServicetest( resultIntent,  args, serviceStartParameters, callbackContext);
 return true;
+}
+else if (action.equals("stopServicetest")){
+if (args.length() != 1) {
+                callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.INVALID_ACTION));
+                return false;
+            }
+             if (args.length() > 0)
+            {
+                            resultIntent = new Intent();
+
+                JSONObject json = args.getJSONObject(0);
+                JSONObject extras = (json.has("extras"))?json.getJSONObject("extras"):null;
+
+                // Populate the extras if any exist
+                if (extras != null) {
+                    JSONArray extraNames = extras.names();
+                    for (int i = 0; i < extraNames.length(); i++) {
+                        String key = extraNames.getString(i);
+                        Object extrasObj = extras.get(key);
+                        if (extrasObj instanceof JSONObject) {
+                            //  The extra is a bundle
+                            Bundle bundle = toBundle((JSONObject) extras.get(key));
+                            resultIntent.putExtra(key, bundle);
+                        } else {
+                            Log.d(LOG_TAG,"Here is the key inside stop service -->"+key +"value -->"+extras.getString(key));
+                            if(key.equals("pkg_name")){
+                                serviceStartParameters.put(key,extras.getString(key));
+                            }
+                            // ras.getString(key));
+                            if(key.equals("cls_name")){
+                                serviceStartParameters.put(key,extras.getString(key));
+                            }
+                            resultIntent.putExtra(key, extras.getString(key));
+                        }
+                    }
+                }
+            }
+
+}
+else if (action.equals("launchIntent")){
+
+   Map<String,String> serviceStartParameters2 = new HashMap<String,String>();
+
+
+Intent resultIntent2 = new Intent();
+
+ if (args.length() != 1) {
+                callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.INVALID_ACTION));
+                return false;
+            }
+             if (args.length() > 0)
+            {
+                            // resultIntent = new Intent();
+
+                JSONObject json = args.getJSONObject(0);
+                JSONObject extras = (json.has("extras"))?json.getJSONObject("extras"):null;
+
+                // Populate the extras if any exist
+                if (extras != null) {
+                    JSONArray extraNames = extras.names();
+                    for (int i = 0; i < extraNames.length(); i++) {
+                        String key = extraNames.getString(i);
+                        Object extrasObj = extras.get(key);
+                        if (extrasObj instanceof JSONObject) {
+                            //  The extra is a bundle
+                            Bundle bundle = toBundle((JSONObject) extras.get(key));
+                            resultIntent2.putExtra(key, bundle);
+                        } else {
+                            Log.d(LOG_TAG,"Here is the key -->"+key +"value -->"+extras.getString(key));
+                            if(key.equals("pkg_name")){
+                                serviceStartParameters2.put(key,extras.getString(key));
+                            }
+                            // ras.getString(key));
+                            if(key.equals("cls_name")){
+                                serviceStartParameters2.put(key,extras.getString(key));
+                            }
+                            resultIntent2.putExtra(key, extras.getString(key));
+                        }
+                    }
+                }
+            }
+
+    launchIntent( resultIntent2,  args, serviceStartParameters2, callbackContext);
+        return true;
+       
 }
         else if (action.equals("sendBroadcast"))
         {
@@ -430,6 +518,7 @@ Log.d(LOG_TAG,"cls_name -->"+cls_name);
                                 // Log.d(LOG_TAG,"Android build version Code"+android.os.Build.VERSION_CODES);
 
                 if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O){
+                    // context.stopService(intent);
                     context.startForegroundService(intent);
                     Log.d(LOG_TAG,"We are above Oreo");
                 }else{
@@ -459,6 +548,65 @@ Log.d(LOG_TAG,"cls_name -->"+cls_name);
 
         return true;
     }
+
+public  boolean isServiceRunning(String serviceClassName){
+
+        final ActivityManager activityManager = (ActivityManager)this.cordova.getActivity().getApplicationContext().getSystemService(Context.ACTIVITY_SERVICE);
+        Log.d(LOG_TAG,"activity Manger getting device config info-->"+ activityManager.getDeviceConfigurationInfo());
+        final List<RunningServiceInfo> services = activityManager.getRunningServices(123456789);
+        
+        Log.d(LOG_TAG,"Size of running services list -->"+ services.size());
+
+        for (RunningServiceInfo runningServiceInfo : services) {
+            Log.d(LOG_TAG,"Here are the services running -->"+ runningServiceInfo.service.getClassName());
+        if (runningServiceInfo.service.getClassName().equals(serviceClassName)){
+        return true;
+        }
+        }
+        return false;
+        }
+
+     private void stopServicetest(Intent intent, JSONArray args, Map<String,String> serviceStartParameterstest, final CallbackContext callbackContext) throws JSONException {
+         Log.d(LOG_TAG,"Inside  stopService Test .......");
+
+        // Log.d(LOG_TAG, "FORK_NYMI_ACTION6: " + action);
+        // Log.d(LOG_TAG,"Sri debugging starts now!!!");
+
+            for (String value : serviceStartParameterstest.values()) {
+
+            Log.d(LOG_TAG,"Received Service Parameters --> " +value);
+
+                        }
+
+        String pkg_name=serviceStartParameterstest.get("pkg_name");
+        String cls_name=serviceStartParameterstest.get("cls_name");
+
+        Log.d(LOG_TAG,"pkg_name -->"+pkg_name);
+        Log.d(LOG_TAG,"cls_name -->"+cls_name);
+
+            // Intent i = new Intent();
+            intent.setComponent(new ComponentName(pkg_name, cls_name));
+                        Context context=this.cordova.getActivity().getApplicationContext(); 
+
+        context.stopService(intent);
+
+     }
+ private void launchIntent(Intent intent, JSONArray args, Map<String,String> serviceStartParameterstest, final CallbackContext callbackContext) throws JSONException {
+     Log.d(LOG_TAG,"Inside launch Intent");
+
+ final PackageManager pm = this.cordova.getActivity().getApplicationContext().getPackageManager();
+
+   Intent launchIntent = pm.getLaunchIntentForPackage("com.nymi.nbeservice");
+            if (launchIntent != null) {
+                launchIntent.putExtra("AGENT_IP", "192.168.2.11");
+                launchIntent.putExtra("AGENT_PORT", "0007");
+                                        Context context=this.cordova.getActivity().getApplicationContext(); 
+
+
+               context.startActivity(launchIntent);
+
+}
+ }
 
 
     private String getRealPathFromURI_API19(JSONObject obj, CallbackContext callbackContext) throws JSONException
@@ -944,3 +1092,5 @@ Log.d(LOG_TAG,"cls_name -->"+cls_name);
         return returnBundle;
     }
 }
+
+
